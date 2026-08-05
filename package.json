@@ -1,0 +1,40 @@
+{
+    "name": "my-agent-harness",
+    "version": "0.0.1",
+    "description": "agent with tui",
+    "type": "module",
+    "scripts": {
+        "start": "bun run src/tui-interact.ts",
+        "build": "tsgo -p tsconfig.json"
+    },
+    "dependencies": {
+        "@earendil-works/pi-tui": "^0.79.9",
+        "@iarna/toml": "^2.2.5",
+        "@modelcontextprotocol/sdk": "^1.29.0",
+        "chalk": "^5.6.2",
+        "cross-spawn": "^7.0.6",
+        "diff": "^9.0.0",
+        "highlight.js": "^11.11.1",
+        "ignore": "^7.0.5",
+        "openai": "^6.42.0",
+        "partial-json": "^0.1.7",
+        "proper-lockfile": "^4.1.2",
+        "typebox": "^1.2.16",
+        "yaml": "^2.9.0"
+    },
+    "engines": {
+        "node": ">=22.19.0"
+    },
+    "devDependencies": {
+        "@types/bun": "latest",
+        "@types/cross-spawn": "^6.0.6",
+        "@types/node": "24.12.4",
+        "@types/proper-lockfile": "^4.1.4",
+        "prettier": "^3.8.3"
+    },
+    "module": "src/main.ts",
+    "private": true,
+    "peerDependencies": {
+        "typescript": "^5"
+    }
+}
