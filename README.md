@@ -103,10 +103,20 @@ chmod -R +x ./bin
 现在，请虚构一位我们的典型种子用户。姓名叫‘王建军’，52岁，居住在中国成都，是一名退休的无线电工程师。请写一段800字的人物画像，强调他非常介意数据被互联网大厂获取，且他的儿子在国外留学，需要通过特定端口转发才能访问家里设备。
 ```
 
-## 临时指令
+## 在任意目录打开agent运行时
+1 创建orange
+touch ~/.bun/bin/orange
+2 根据项目位置修改PROJECT
+```sh
+#!/bin/bash
+PROJECT=""
+WORKDIR="$PWD"
+cd "$PROJECT" || exit 1
+bun run start "$WORKDIR" "$@"
 ```
-sudo chmod +x /home/chenpin/.bun/bin/orange
-```
+3 提供指令权限
+sudo chmod +x ~/.bun/bin/orange
+
 
 ## subagent设计
 ```
