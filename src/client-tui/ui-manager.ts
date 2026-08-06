@@ -29,6 +29,7 @@ import { ensureTool } from "../utils/global-tools.ts"
 import { keyText } from "./core/keybinding-hints.ts"
 import { createCompactionSummaryMessage } from "../agent-core/harness/message.ts"
 import { formatDisplayPath } from "./helper.ts"
+import { noModelAvailable } from "../agent-core/guide.ts"
 
 function isContentBlock(content: unknown): content is { type: string } {
     return typeof content === "object" && content !== null && "type" in content
@@ -113,6 +114,9 @@ export default class UIManager {
     private get agentManager() {
         return this.agentContext.agentManager
     }
+    get modelRegistry() {
+        return this.agentContext.modelRegistry
+    }
 
     constructor(app: InteractiveMode) {
         this.app = app
@@ -166,6 +170,12 @@ export default class UIManager {
         this.subscribeToSubagent()
         this.autoComplete.setupAutocompleteProvider()
         this.initUIComponent()
+
+        const defaultModel = this.settingsManager.get("defaultModel")
+        const model = this.modelRegistry.getModel(defaultModel.provider, defaultModel.model)
+        if (!model) {
+            this.showWarning(noModelAvailable)
+        }
     }
 
     subscribeToSubagent() {
@@ -342,7 +352,7 @@ export default class UIManager {
         }
         const terminalConfig = this.settingsManager.get("terminal")
         switch (event.type) {
-            case "agent_start":
+            case "agent_start": {
                 if (terminalConfig?.showTerminalProgress) {
                     this.ui.terminal.setProgress(true)
                 }
@@ -366,17 +376,27 @@ export default class UIManager {
                     this.statusContainer.addChild(this.loadingAnimation)
                 }
                 break
+            }
 
-            case "queue_update":
+            case "queue_update": {
                 this.updatePendingMessagesDisplay()
                 break
+            }
 
-            case "message_start":
+            case "message_start": {
                 if (event.message.role === "user") {
                     this.addMessageToChat(event.message)
                     this.updatePendingMessagesDisplay()
                 }
                 break
+            }
+
+            case "message_end": {
+                if (event.message.role === "assistant" && event.message.errorMessage) {
+                    this.showError(event.message.errorMessage)
+                }
+                break
+            }
 
             case "message_update": {
                 const e = event.assistantMessageEvent
@@ -494,12 +514,70 @@ export default class UIManager {
                 break
             }
 
-            case "agent_end":
+            case "auto_retry_start": {
+                // Set up escape to abort retry
+                this.retryEscapeHandler = this.editor.onEscape
+                this.editor.onEscape = () => {
+                    this.session.abortRetry()
+                }
+                // Show retry indicator
+                this.statusContainer.clear()
+                this.retryCountdown?.dispose()
+                const retryMessage = (seconds: number) =>
+                    `Retrying (${event.attempt}/${event.maxAttempts}) in ${seconds}s... (${keyText("app.interrupt")} to cancel)`
+                this.retryLoader = new Loader(
+                    this.ui,
+                    (spinner) => theme.fg("warning", spinner),
+                    (text) => theme.fg("muted", text),
+                    retryMessage(Math.ceil(event.delayMs / 1000)),
+                )
+                this.retryCountdown = new CountdownTimer(
+                    event.delayMs,
+                    this.ui,
+                    (seconds) => {
+                        this.retryLoader?.setMessage(retryMessage(seconds))
+                    },
+                    () => {
+                        this.retryCountdown = undefined
+                    },
+                )
+                this.statusContainer.addChild(this.retryLoader)
+                this.ui.requestRender()
+                break
+            }
+
+            case "auto_retry_end": {
+                // Restore escape handler
+                if (this.retryEscapeHandler) {
+                    this.editor.onEscape = this.retryEscapeHandler
+                    this.retryEscapeHandler = undefined
+                }
+                if (this.retryCountdown) {
+                    this.retryCountdown.dispose()
+                    this.retryCountdown = undefined
+                }
+                // Stop loader
+                if (this.retryLoader) {
+                    this.retryLoader.stop()
+                    this.retryLoader = undefined
+                    this.statusContainer.clear()
+                }
+                // Show error only on final failure (success shows normal response)
+                if (!event.success) {
+                    this.showError(
+                        `Retry failed after ${event.attempt} attempts: ${event.finalError || "Unknown error"}`,
+                    )
+                }
+                break
+            }
+
+            case "agent_end": {
                 if (terminalConfig?.showTerminalProgress) {
                     this.ui.terminal.setProgress(false)
                 }
                 this.stopWorkingLoader()
                 break
+            }
         }
         this.ui.requestRender()
     }

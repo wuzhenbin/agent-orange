@@ -95,20 +95,3 @@ export function getModelSearchText(item: ModelSearchItem): string {
     const name = item.name ? ` ${item.name}` : ""
     return `${id} ${provider} ${provider}/${id} ${provider} ${id}${name}`
 }
-
-export const DEFAULT_MODELS_CONFIG = {
-    providers: {
-        ollama: {
-            baseUrl: "http://127.0.0.1:11434/v1",
-            api: "openai-completions",
-            apiKey: "ollama",
-            models: [
-                {
-                    id: "qwen3:8b",
-                    contextWindow: 128000,
-                    maxTokens: 32000,
-                },
-            ],
-        },
-    },
-} satisfies ModelsConfig

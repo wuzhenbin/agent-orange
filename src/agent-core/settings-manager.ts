@@ -6,8 +6,8 @@ import { getSettingsPath } from "../config/path-config.ts"
 const defaultSettingOverride = {
     masterProfile: "default",
     defaultModel: {
-        provider: "ollama",
-        model: "qwen3:8b",
+        provider: "unknown",
+        model: "unknown",
         thinkingLevel: "medium",
     },
 }

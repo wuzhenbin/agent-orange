@@ -190,7 +190,8 @@ export class FooterComponent implements Component {
             statsLeftWidth = visibleWidth(statsLeft)
         }
 
-        let rightSide = `(${state.model!.provider}) ${modelName}`
+        let rightSide =
+            modelName === "unknown" ? `unknown` : `(${state.model!.provider}) ${modelName}`
 
         // 组装统计信息行
         const rightSideWidth = visibleWidth(rightSide)

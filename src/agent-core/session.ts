@@ -33,6 +33,7 @@ import {
     shouldCompact,
 } from "./harness/compaction.ts"
 import { ModelRegistry } from "./model-registry.ts"
+import { noModelAvailable } from "./guide.ts"
 
 const THINKING_LEVELS: ThinkingLevel[] = ["off", "minimal", "low", "medium", "high"]
 
@@ -261,6 +262,7 @@ export class AgentSession {
         let messages: AgentMessage[] | undefined
         try {
             let currentImages = options?.images
+
             if (this.isStreaming) {
                 if (!options?.streamingBehavior) {
                     throw new Error(
@@ -273,6 +275,24 @@ export class AgentSession {
                     await this._queueSteer(text, currentImages)
                 }
                 return
+            }
+
+            // Validate model 检查 Model
+            if (!this.model) {
+                throw new Error(noModelAvailable)
+            }
+
+            // Check if we need to compact before sending (catches aborted responses)
+            const lastAssistant = this._findLastAssistantMessage()
+            // 上下文是不是太长了
+            if (lastAssistant && (await this._checkCompaction(lastAssistant, false))) {
+                try {
+                    await this.agent.continue()
+                    while (await this._handlePostAgentRun()) {
+                        await this.agent.continue()
+                    }
+                } finally {
+                }
             }
 
             // Build messages array (custom message if any, then user message)
@@ -377,7 +397,6 @@ export class AgentSession {
                 const assistantMsg = event.message as AssistantMessage
                 // Reset retry counter immediately on successful assistant response
                 // This prevents accumulation across multiple LLM calls within a turn
-                // retry 成功立即结束
                 if (assistantMsg.stopReason !== "error" && this._retryAttempt > 0) {
                     this._emit({
                         type: "auto_retry_end",
@@ -405,6 +424,18 @@ export class AgentSession {
         if (typeof content === "string") return content
         const textBlocks = content.filter((c) => c.type === "text")
         return textBlocks.map((c) => (c as TextContent).text).join("")
+    }
+
+    /** Find the last assistant message in agent state (including aborted ones) */
+    private _findLastAssistantMessage(): AssistantMessage | undefined {
+        const messages = this.agent.state.messages
+        for (let i = messages.length - 1; i >= 0; i--) {
+            const msg = messages[i]
+            if (msg.role === "assistant") {
+                return msg as AssistantMessage
+            }
+        }
+        return undefined
     }
 
     private _willRetryAfterAgentEnd(event: Extract<AgentEvent, { type: "agent_end" }>): boolean {

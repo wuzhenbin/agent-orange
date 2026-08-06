@@ -8,7 +8,6 @@ import {
     ModelsConfig,
     ModelsConfigSchema,
     formatValidationPath,
-    DEFAULT_MODELS_CONFIG,
     ProviderConfigSchema,
 } from "./model-registry-helper.ts"
 import { getModelsPath } from "../config/path-config.ts"
@@ -72,11 +71,7 @@ export class ModelRegistry {
             if (!existsSync(dir)) {
                 mkdirSync(dir, { recursive: true })
             }
-            writeFileSync(
-                this.modelsJsonPath,
-                JSON.stringify(DEFAULT_MODELS_CONFIG, null, 2),
-                "utf8",
-            )
+            writeFileSync(this.modelsJsonPath, JSON.stringify({}, null, 2), "utf8")
             return true
         } catch (err) {
             this.loadError =

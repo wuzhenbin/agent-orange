@@ -37,7 +37,6 @@ export class InteractiveMode {
             } catch (error: unknown) {
                 const errorMessage =
                     error instanceof Error ? error.message : "Unknown error occurred"
-                this.uiManager.messageComponent.writePart("error", errorMessage)
                 this.uiManager.showError(errorMessage)
             }
         }
