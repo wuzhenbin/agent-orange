@@ -1,12 +1,22 @@
 {
-    "name": "my-agent-harness",
+    "name": "orange-agent-harness",
     "version": "0.0.1",
-    "description": "agent with tui",
+    "description": "agent harness enginess with tui",
     "type": "module",
     "scripts": {
-        "start": "bun run src/tui-interact.ts",
-        "build": "tsgo -p tsconfig.json"
+        "dev": "bun run src/cli.ts",
+        "start": "bun run src/cli.ts",
+        "build": "tsgo -p tsconfig.json",
+        "prepublishOnly": "npm run build",
+        "pack:check": "npm pack --dry-run",
+        "clean": "rm -rf dist"
     },
+    "bin": {
+        "orange": "./dist/cli.js"
+    },
+    "files": [
+        "dist"
+    ],
     "dependencies": {
         "@earendil-works/pi-tui": "^0.79.9",
         "@iarna/toml": "^2.2.5",
@@ -28,13 +38,12 @@
     "devDependencies": {
         "@types/bun": "latest",
         "@types/cross-spawn": "^6.0.6",
-        "@types/node": "24.12.4",
+        "@types/node": "^26.2.0",
         "@types/proper-lockfile": "^4.1.4",
-        "prettier": "^3.8.3"
-    },
-    "module": "src/main.ts",
-    "private": true,
-    "peerDependencies": {
+        "prettier": "^3.8.3",
         "typescript": "^5"
+    },
+    "publishConfig": {
+        "access": "public"
     }
 }

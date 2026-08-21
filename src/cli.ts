@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { createAgentContextParams } from "./agent-core/agent-runtime/agent-context-builder.ts"
 import { AgentContext } from "./agent-core/agent-runtime/agent-context.ts"
 import { InteractiveMode } from "./client-tui/interact.ts"
