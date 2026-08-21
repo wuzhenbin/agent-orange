@@ -1,6 +1,6 @@
 import chalk from "chalk"
 
-export const Welcome = `\nWelcome back!\n`
+export const Welcome = `\nWelcome 🍊Orange Agent!\n`
 
 export const APP_TITLE: string = "Orange"
 
@@ -13,23 +13,23 @@ export enum MessageType {
 }
 
 export const CustomColor = {
-    tips: chalk.rgb(108, 163, 94),
-    gray: chalk.rgb(120, 120, 120),
-    title: chalk.rgb(240, 198, 116),
-    info: chalk.rgb(56, 189, 248),
-    warning: chalk.rgb(245, 166, 35),
-    error: chalk.rgb(248, 113, 113),
+    tips: chalk.hex("#6CA35E"),
+    gray: chalk.hex("#787878"),
+    title: chalk.hex("#F0C674"),
+    info: chalk.hex("#38BDF8"),
+    warning: chalk.hex("#F5A623"),
+    error: chalk.hex("#F87171"),
 }
 
 export const AgentColor = {
+    theme: chalk.hex("#F59E0B"),
     think: CustomColor.gray,
-    reply: chalk.rgb(183, 149, 245),
-    tool_call: chalk.rgb(0, 137, 123),
-    tool_result: chalk.rgb(245, 158, 11),
-    compact: chalk.rgb(255, 71, 156),
+    reply: chalk.hex("#B795F5"),
+    tool_call: chalk.hex("#00897B"),
+    tool_result: chalk.hex("#FF8800"),
+    compact: chalk.hex("#FF479C"),
     subagent: CustomColor.info,
 }
-
 export const logo = `
 　/＼7　　　 ∠＿/
 　/　│　　 ／　／

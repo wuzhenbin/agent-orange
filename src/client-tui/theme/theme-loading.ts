@@ -15,10 +15,8 @@ function getBuiltinThemes(): Record<string, ThemeJson> {
     if (!BUILTIN_THEMES) {
         const themesDir = getThemesDir()
         const darkPath = path.join(themesDir, "dark.json")
-        const lightPath = path.join(themesDir, "light.json")
         BUILTIN_THEMES = {
             dark: JSON.parse(fs.readFileSync(darkPath, "utf-8")) as ThemeJson,
-            light: JSON.parse(fs.readFileSync(lightPath, "utf-8")) as ThemeJson,
         }
     }
     return BUILTIN_THEMES
@@ -115,8 +113,7 @@ function parseThemeJson(label: string, json: unknown): ThemeJson {
                 .map((color) => `  - ${color}`)
                 .join("\n")
             errorMessage += '\n\nPlease add these colors to your theme\'s "colors" object.'
-            errorMessage +=
-                "\nSee the built-in themes (dark.json, light.json) for reference values."
+            errorMessage += "\nSee the built-in themes for reference values."
         }
         if (otherErrors.length > 0) {
             errorMessage += `\n\nOther errors:\n${otherErrors.join("\n")}`

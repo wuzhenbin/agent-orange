@@ -5,6 +5,7 @@ import { Theme } from "./theme.ts"
 import { getDefaultTheme, loadTheme, loadThemeFromPath } from "./theme-loading.ts"
 import { getThemesDir } from "../../config/path-config.ts"
 import { watchWithErrorHandler, closeWatcher } from "../../utils/fs-watch.ts"
+import { hexToRgb } from "./color-utilities.ts"
 
 // ============================================================================
 // Global Theme Instance

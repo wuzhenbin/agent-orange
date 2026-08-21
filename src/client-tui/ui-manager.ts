@@ -11,10 +11,10 @@ import {
     TruncatedText,
 } from "@earendil-works/pi-tui"
 import { getEditorTheme } from "./theme/tui-helper.ts"
-import { KeybindingsManager } from "./core/keybindings.ts"
 import { initTheme, theme } from "./theme/global-instance.ts"
+import { KeybindingsManager } from "./core/keybindings.ts"
 import { CustomEditor } from "./components/custom-editor.ts"
-import { Welcome, CustomColor, APP_TITLE } from "../config/settings.ts"
+import { Welcome, CustomColor, APP_TITLE, AgentColor } from "../config/settings.ts"
 import chalk from "chalk"
 import { InteractiveMode } from "./interact.ts"
 import { CountdownTimer } from "./components/countdown-timer.ts"
@@ -266,13 +266,13 @@ export default class UIManager {
 
     initUIComponent() {
         // welcome
-        this.headerContainer.addChild(new Text(Welcome, 0, 0, (text) => chalk.yellow(text)))
+        this.headerContainer.addChild(new Text(Welcome, 0, 0, (text) => AgentColor.theme(text)))
 
         // mcps
         const useMcps = this.definition.useMcps ?? []
         if (useMcps.length) {
             this.headerContainer.addChild(
-                new Text(`[MCPs]`, 0, 0, (text) => CustomColor.title(text)),
+                new Text(`[MCP]`, 0, 0, (text) => CustomColor.title(text)),
             )
             this.headerContainer.addChild(
                 new Text(useMcps.join(", "), 0, 0, (text) => CustomColor.gray(text)),
