@@ -30,6 +30,7 @@ export const AgentColor = {
     compact: chalk.hex("#FF479C"),
     subagent: CustomColor.info,
 }
+
 export const logo = `
 　/＼7　　　 ∠＿/
 　/　│　　 ／　／

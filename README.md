@@ -16,7 +16,7 @@
 - 🗜️ **上下文压缩（Compaction）**：超长会话自动/手动压缩，保留关键信息
 - 🛠️ **内置工具集**：bash、文件读写编辑、grep / find 搜索等
 - 🔗 **MCP 扩展**：通过 Model Context Protocol 接入外部能力
-- 🎨 **主题系统**：内置 dark / light 主题，可自定义
+- 🎨 **主题系统**：内置主题
 
 ---
 
@@ -57,16 +57,106 @@ bun run start /path/to/project
 ```
 ~/.agent-orange/
 ├── models.json       # 模型与提供商配置
-├── settings.json     # 运行时设置
-├── plugins.json      # MCP 服务与技能路径
-├── agents/           # 子代理配置（*.toml）
+├── settings.json     # 运行时设置（主代理角色、默认模型等）
+├── plugins.json      # MCP 服务定义与技能路径
+├── agents/           # 代理角色配置（*.toml）
+│   ├── default.toml  # 主代理（默认角色）
+│   └── web-researcher.toml  # 子代理示例
 ├── sessions/         # 会话持久化
 ├── bin/              # 内置工具二进制（rg / fd 等）
-├── python-runtime/   # Python 运行时
+├── python-runtime/   # Python 运行时（uv 管理）
 └── skills/           # 技能目录
 ```
 
 > 首次启动时会自动创建该目录及默认配置文件。
+
+### settings.json — 运行时设置
+
+配置文件：`~/.agent-orange/settings.json`
+
+```jsonc
+{
+  "masterProfile": "default",       // 主代理角色名，对应 agents/ 下的 .toml 文件名（不含扩展名）
+  "defaultModel": {
+    "provider": "deepseek",         // 默认模型提供商（对应 models.json 中的 key）
+    "model": "deepseek-chat",       // 默认模型 ID
+    "thinkingLevel": "medium"       // 思考强度：off | minimal | low | medium | high | xhigh
+  }
+}
+```
+
+- **`masterProfile`**：指定主代理使用的角色。默认值为 `"default"`，即加载 `agents/default.toml`。你可以在 `agents/` 下创建多个角色文件，通过修改此字段切换主代理的人格与能力。
+
+### agents/ — 代理角色配置
+
+目录：`~/.agent-orange/agents/`
+
+每个 `.toml` 文件定义一个代理角色。`default.toml` 为主代理的默认角色，其余 `.toml` 文件作为**子代理（Subagent）** 供主代理按需委派任务。
+
+#### default.toml 示例
+
+```toml
+name = "default"
+description = "general-purpose agent"
+developer_instructions = "You are a general-purpose AI agent that assists users with software engineering, research, analysis, and problem-solving tasks."
+tools = [ "read", "find", "ls", "write", "edit", "grep", "bash" ]
+mcps = [ ]
+skills = [ ]
+programs = [ ]
+```
+
+#### 字段说明
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `name` | `string` | ✅ | 代理名称，应与文件名一致（如 `default.toml` 对应 `"default"`） |
+| `description` | `string` | ✅ | 代理描述。主代理编排时会根据此描述判断是否将任务委派给该子代理 |
+| `developer_instructions` | `string` | ✅ | 系统提示词（System Prompt），定义代理的角色、行为准则与能力边界 |
+| `tools` | `string[]` | ❌ | 可用工具白名单。可选值：`read`、`write`、`edit`、`ls`、`find`、`grep`、`bash`、`delegate_task`
+| `mcps` | `string[]` | ❌ | 启用的 MCP 服务名称列表。名称对应 `plugins.json` 中 `mcpServers` 的 key |
+| `skills` | `string[]` | ❌ | 启用的技能名称列表。技能文件从 `plugins.json` 中 `skillsPaths` 指定的目录加载 |
+| `programs` | `string[]` | ❌ | 启用的程序运行环境。目前支持 `"python"`，启用后会在 `~/.agent-orange/python-runtime/` 下初始化一个基于 `uv` 的 Python 运行环境，代理可使用 `uv run` / `uv add` 执行 Python 脚本 |
+
+#### mcps / skills 的声明与激活
+
+`mcps` 和 `skills` 采用**声明-激活分离**的设计：
+
+1. **声明**（定义可用资源）：在 `~/.agent-orange/plugins.json` 中声明所有可用的 MCP 服务和技能路径：
+
+```jsonc
+{
+  "skillsPaths": ["/home/user/.agent-orange/skills"],
+  "mcpServers": {
+    "fetch": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/mcp-fetch"]
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/mcp-github"],
+      "env": { "GITHUB_TOKEN": "ghp_xxx" }
+    }
+  }
+}
+```
+
+2. **激活**（按需启用）：在 `agents/*.toml` 的 `mcps` 和 `skills` 数组中引用已声明的名称，仅列入的项才会被加载到该代理的上下文中：
+
+```toml
+# 仅激活 fetch MCP，不激活 github
+mcps = [ "fetch" ]
+
+# 激活名为 "code-review" 的技能
+skills = [ "code-review" ]
+```
+
+> 💡 这种设计使得多个代理可以共享同一份插件声明，但各自按需启用不同的子集，避免资源浪费。
+
+#### programs 运行环境
+
+`programs` 字段用于为代理开启本地程序执行环境。当前支持：
+
+- **`"python"`**：启用后，系统提示中会注入 Python 环境指令，代理将使用 `~/.agent-orange/python-runtime/` 作为工作目录，通过 `uv run` 执行 Python 脚本，通过 `uv add <package>` 安装依赖。
 
 ---
 
@@ -157,24 +247,29 @@ Agent 启动时会自动加载项目上下文文件，用于注入项目特定�
 
 ## 子代理（Subagent）
 
-子代理配置存放在 `~/.agent-orange/agents/` 目录，每个 `.toml` 文件为一个代理定义（`default.toml` 为默认代理，不会被当作子代理）。
+### 子代理配置示例
 
-### 代理配置字段
+在 `~/.agent-orange/agents/` 下创建新的 `.toml` 文件即可定义子代理（文件名不能为 `default.toml`）：
 
 ```toml
+# ~/.agent-orange/agents/web-researcher.toml
 name = "web-researcher"
 description = "用于联网检索、抓取网页与从在线资源提取结构化信息的专用代理"
-developer_instructions = "你是专注联网研究的子代理……（系统指令）"
+developer_instructions = """
+你是专注联网研究的子代理。
+你的职责是：通过 MCP 工具抓取网页内容，提取关键信息并返回结构化结论。
+不要回答与联网检索无关的问题。
+"""
 
-tools    = ["bash", "read", "grep"]   # 可选，限定可用工具；省略则使用默认工具集
-mcps     = ["fetch"]                  # 可选，启用的 MCP 服务
-skills   = []                         # 可选，启用的技能
-programs = []                         # 可选，启用的程序
+tools    = ["bash", "read", "grep"]   # 限定可用工具；省略则使用全部内置工具
+mcps     = ["fetch"]                  # 启用 plugins.json 中声明的 fetch MCP 服务
+skills   = []                         # 不启用额外技能
+programs = []                         # 不需要程序运行环境
 ```
 
 ### 工作机制
 
-- 主代理（orchestrator）读取 `agents/` 下的全部子代理定义，在系统提示中作为 `<available_agents>` 暴露给模型；
+- 主代理（orchestrator）读取 `settings.json` 中的 `masterProfile` 确定自身角色，并加载 `agents/` 下**除 default.toml 以外**的全部子代理定义，在系统提示中作为 `<available_agents>` 暴露给模型；
 - 当任务匹配某个子代理的能力时，主代理调用 `delegate_task` 工具，将任务委派给子代理**独立执行**；
 - 子代理仅向主代理返回**最终结论**，由主代理整合后回答用户。
 
