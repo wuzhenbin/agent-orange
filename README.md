@@ -32,20 +32,36 @@ curl -fsSL https://bun.sh/install | bash
 
 > 项目要求 Node `>=22.19.0`，推荐使用 Bun 运行时。
 
-### 2. 安装依赖
+### 2. 安装 Agent Orange
+
+选择以下任一方式全局安装：
+
+**方式一：Bun（推荐）**
 
 ```bash
-bun install
+bun add -g orange-agent-harness
 ```
+
+**方式二：npm**
+
+```bash
+npm install -g orange-agent-harness
+```
+
+**方式三：免安装直接运行**
+
+无需全局安装，通过 `npx` 临时下载并启动：
+
+```bash
+npx orange-agent-harness
+```
+
+> 💡 推荐使用 Bun 安装，启动速度更快，且与项目运行时保持一致。
 
 ### 3. 启动 Agent 运行时
 
 ```bash
-# 默认在当前目录启动
-bun run start
-
-# 也可指定工作目录
-bun run start /path/to/project
+orange
 ```
 
 ---
@@ -342,35 +358,6 @@ ripgrep 按以下顺序读取忽略文件：
 
 ---
 
-## 在任意目录启动 Agent
-
-通过一个全局命令包装脚本，可在任意目录唤起 Agent 运行时：
-
-**1. 创建启动脚本**
-
-```bash
-touch ~/.bun/bin/orange
-```
-
-**2. 写入以下内容**（将 `PROJECT` 改为本项目的实际路径）：
-
-```bash
-#!/bin/bash
-PROJECT="/path/to/agent-orange"   # 改为项目实际路径
-WORKDIR="$PWD"                    # 继承当前所在目录作为工作目录
-cd "$PROJECT" || exit 1
-bun run start "$WORKDIR" "$@"
-```
-
-**3. 赋予执行权限**
-
-```bash
-sudo chmod +x ~/.bun/bin/orange
-```
-
-之后在任意目录执行 `orange` 即可启动，Agent 会以当前目录作为工作上下文。
-
----
 
 ## 上下文压缩测试用例
 
@@ -392,6 +379,9 @@ sudo chmod +x ~/.bun/bin/orange
 ## 开发
 
 ```bash
+# 下载tsgo进行编译
+npm install @typescript/native-preview -g
+
 # 构建类型检查
 bun run build
 

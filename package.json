@@ -1,6 +1,6 @@
 {
     "name": "orange-agent-harness",
-    "version": "0.0.1",
+    "version": "0.0.3",
     "description": "agent harness enginess with tui",
     "type": "module",
     "scripts": {

@@ -1,26 +1,16 @@
-import * as path from "node:path"
 import * as fs from "node:fs"
 import { getCapabilities } from "@earendil-works/pi-tui"
 
 import { ThemeJson, validateThemeJson, ColorMode, ThemeColor, ThemeBg } from "./types.ts"
-import { getThemesDir } from "../../config/path-config.ts"
+import { darkTheme } from "../../config/theme/dark.ts"
 import { registeredThemes } from "./global-instance.ts"
 import { Theme } from "./theme.ts"
 import { resolveThemeColors, hexToRgb } from "./color-utilities.ts"
 import { ansi256ToHex } from "./html-export-helper.ts"
 
-let BUILTIN_THEMES: Record<string, ThemeJson> | undefined
-
-function getBuiltinThemes(): Record<string, ThemeJson> {
-    if (!BUILTIN_THEMES) {
-        const themesDir = getThemesDir()
-        const darkPath = path.join(themesDir, "dark.json")
-        BUILTIN_THEMES = {
-            dark: JSON.parse(fs.readFileSync(darkPath, "utf-8")) as ThemeJson,
-        }
-    }
-    return BUILTIN_THEMES
-}
+const BUILTIN_THEMES = {
+    dark: darkTheme,
+} as const
 
 export function getAvailableThemes(): string[] {
     return getAvailableThemesWithPaths().map(({ name }) => name)
@@ -28,11 +18,10 @@ export function getAvailableThemes(): string[] {
 
 export interface ThemeInfo {
     name: string
-    path: string | undefined
+    path?: string
 }
 
 export function getAvailableThemesWithPaths(): ThemeInfo[] {
-    const themesDir = getThemesDir()
     const result: ThemeInfo[] = []
     const seen = new Set<string>()
     const addTheme = (themeInfo: ThemeInfo) => {
@@ -44,13 +33,8 @@ export function getAvailableThemesWithPaths(): ThemeInfo[] {
     }
 
     // Built-in themes
-    for (const name of Object.keys(getBuiltinThemes())) {
-        addTheme({ name, path: path.join(themesDir, `${name}.json`) })
-    }
-
-    // Custom themes
-    for (const themeInfo of getCustomThemeInfos()) {
-        addTheme(themeInfo)
+    for (const name of Object.keys(BUILTIN_THEMES)) {
+        addTheme({ name })
     }
 
     for (const [name, theme] of registeredThemes.entries()) {
@@ -58,31 +42,6 @@ export function getAvailableThemesWithPaths(): ThemeInfo[] {
     }
 
     return result.sort((a, b) => a.name.localeCompare(b.name))
-}
-
-function getCustomThemeInfos(): ThemeInfo[] {
-    const customThemesDir = getThemesDir()
-    const result: ThemeInfo[] = []
-    if (!fs.existsSync(customThemesDir)) {
-        return result
-    }
-
-    for (const file of fs.readdirSync(customThemesDir)) {
-        if (!file.endsWith(".json")) {
-            continue
-        }
-        const themePath = path.join(customThemesDir, file)
-        try {
-            const customTheme = loadThemeFromPath(themePath)
-            if (customTheme.name) {
-                result.push({ name: customTheme.name, path: themePath })
-            }
-        } catch {
-            // Invalid themes are ignored here; the resource loader reports them
-            // during normal startup/reload.
-        }
-    }
-    return result
 }
 
 function parseThemeJson(label: string, json: unknown): ThemeJson {
@@ -135,28 +94,6 @@ function parseThemeJsonContent(label: string, content: string): ThemeJson {
     return parseThemeJson(label, json)
 }
 
-export function loadThemeJson(name: string): ThemeJson {
-    const builtinThemes = getBuiltinThemes()
-    if (name in builtinThemes) {
-        return builtinThemes[name]
-    }
-    const registeredTheme = registeredThemes.get(name)
-    if (registeredTheme?.sourcePath) {
-        const content = fs.readFileSync(registeredTheme.sourcePath, "utf-8")
-        return parseThemeJsonContent(registeredTheme.sourcePath, content)
-    }
-    if (registeredTheme) {
-        throw new Error(`Theme "${name}" does not have a source path for export`)
-    }
-    const customThemesDir = getThemesDir()
-    const themePath = path.join(customThemesDir, `${name}.json`)
-    if (!fs.existsSync(themePath)) {
-        throw new Error(`Theme not found: ${name}`)
-    }
-    const content = fs.readFileSync(themePath, "utf-8")
-    return parseThemeJsonContent(name, content)
-}
-
 function createTheme(themeJson: ThemeJson, mode?: ColorMode, sourcePath?: string): Theme {
     const colorMode = mode ?? (getCapabilities().trueColor ? "truecolor" : "256color")
     const resolvedColors = resolveThemeColors(themeJson.colors, themeJson.vars)
@@ -193,16 +130,11 @@ export function loadTheme(name: string, mode?: ColorMode): Theme {
     if (registeredTheme) {
         return registeredTheme
     }
-    const themeJson = loadThemeJson(name)
-    return createTheme(themeJson, mode)
-}
-
-export function getThemeByName(name: string): Theme | undefined {
-    try {
-        return loadTheme(name)
-    } catch {
-        return undefined
+    const themeJson = BUILTIN_THEMES[name as keyof typeof BUILTIN_THEMES]
+    if (!themeJson) {
+        throw new Error(`Theme not found: ${name}`)
     }
+    return createTheme(themeJson, mode)
 }
 
 export type TerminalTheme = "dark" | "light"

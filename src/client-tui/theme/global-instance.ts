@@ -1,11 +1,8 @@
 import * as fs from "node:fs"
-import * as path from "node:path"
-
 import { Theme } from "./theme.ts"
-import { getDefaultTheme, loadTheme, loadThemeFromPath } from "./theme-loading.ts"
-import { getThemesDir } from "../../config/path-config.ts"
-import { watchWithErrorHandler, closeWatcher } from "../../utils/fs-watch.ts"
-import { hexToRgb } from "./color-utilities.ts"
+import { getDefaultTheme, loadTheme } from "./theme-loading.ts"
+import { closeWatcher } from "../../utils/fs-watch.ts"
+// import { hexToRgb } from "./color-utilities.ts"
 
 // ============================================================================
 // Global Theme Instance
@@ -45,14 +42,11 @@ export function setRegisteredThemes(themes: Theme[]): void {
     }
 }
 
-export function initTheme(themeName?: string, enableWatcher: boolean = false): void {
+export function initTheme(themeName?: string): void {
     const name = themeName ?? getDefaultTheme()
     currentThemeName = name
     try {
         setGlobalTheme(loadTheme(name))
-        if (enableWatcher) {
-            startThemeWatcher()
-        }
     } catch (_error) {
         // Theme is invalid - fall back to dark theme silently
         currentThemeName = "dark"
@@ -61,16 +55,10 @@ export function initTheme(themeName?: string, enableWatcher: boolean = false): v
     }
 }
 
-export function setTheme(
-    name: string,
-    enableWatcher: boolean = false,
-): { success: boolean; error?: string } {
+export function setTheme(name: string): { success: boolean; error?: string } {
     currentThemeName = name
     try {
         setGlobalTheme(loadTheme(name))
-        if (enableWatcher) {
-            startThemeWatcher()
-        }
         if (onThemeChangeCallback) {
             onThemeChangeCallback()
         }
@@ -98,79 +86,6 @@ export function setThemeInstance(themeInstance: Theme): void {
 
 export function onThemeChange(callback: () => void): void {
     onThemeChangeCallback = callback
-}
-
-function startThemeWatcher(): void {
-    stopThemeWatcher()
-
-    // Only watch if it's a custom theme (not built-in)
-    if (!currentThemeName || currentThemeName === "dark" || currentThemeName === "light") {
-        return
-    }
-
-    const customThemesDir = getThemesDir()
-    const watchedThemeName = currentThemeName
-    const watchedFileName = `${watchedThemeName}.json`
-    const themeFile = path.join(customThemesDir, watchedFileName)
-
-    // Only watch if the file exists
-    if (!fs.existsSync(themeFile)) {
-        return
-    }
-
-    const scheduleReload = () => {
-        if (themeReloadTimer) {
-            clearTimeout(themeReloadTimer)
-        }
-        themeReloadTimer = setTimeout(() => {
-            themeReloadTimer = undefined
-
-            // Ignore stale timers after switching themes or stopping the watcher
-            if (currentThemeName !== watchedThemeName) {
-                return
-            }
-
-            // Keep the last successfully loaded theme active if the file is temporarily missing
-            if (!fs.existsSync(themeFile)) {
-                return
-            }
-
-            try {
-                // Reload the theme from disk and refresh the registry cache
-                const reloadedTheme = loadThemeFromPath(themeFile)
-                registeredThemes.set(watchedThemeName, reloadedTheme)
-                setGlobalTheme(reloadedTheme)
-                // Notify callback (to invalidate UI)
-                if (onThemeChangeCallback) {
-                    onThemeChangeCallback()
-                }
-            } catch (_error) {
-                // Ignore errors (file might be in invalid state while being edited)
-            }
-        }, 100)
-    }
-
-    themeWatcher =
-        watchWithErrorHandler(
-            customThemesDir,
-            (_eventType, filename) => {
-                if (currentThemeName !== watchedThemeName) {
-                    return
-                }
-                if (!filename) {
-                    scheduleReload()
-                    return
-                }
-                if (filename !== watchedFileName) {
-                    return
-                }
-                scheduleReload()
-            },
-            () => {
-                closeWatcher(themeWatcher)
-                themeWatcher = undefined
-            },
-        ) ?? undefined
 }
 
 // 停止主题热重载相关资源 1 清除定时器 2 关闭文件监听器 3 释放引用

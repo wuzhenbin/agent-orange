@@ -1,6 +1,13 @@
 import { dirname, join } from "path"
 import { existsSync } from "fs"
 import { homedir } from "os"
+import { fileURLToPath } from "node:url"
+
+// =============================================================================
+// Package Detection
+// =============================================================================
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 export const CONFIG_DIR_NAME: string = ".agent-orange"
 
@@ -17,10 +24,6 @@ export function getPackageDir(): string {
 
 export function getGlobalDir(): string {
     return join(homedir(), CONFIG_DIR_NAME)
-}
-
-export function getThemesDir(): string {
-    return join(getPackageDir(), "theme")
 }
 
 /** Get path to sessions directory */
