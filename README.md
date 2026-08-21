@@ -22,7 +22,11 @@
 
 ## 快速开始
 
-### 1. 安装 Bun
+### 1. 安装 Agent Orange
+
+选择以下任一方式全局安装：
+
+**方式一：Bun（推荐）**
 
 如尚未安装 Bun：
 
@@ -32,15 +36,13 @@ curl -fsSL https://bun.sh/install | bash
 
 > 项目要求 Node `>=22.19.0`，推荐使用 Bun 运行时。
 
-### 2. 安装 Agent Orange
-
-选择以下任一方式全局安装：
-
-**方式一：Bun（推荐）**
+然后全局安装：
 
 ```bash
 bun add -g orange-agent-harness
 ```
+
+> 💡 推荐使用 Bun 安装，启动速度更快，且与项目运行时保持一致。
 
 **方式二：npm**
 
@@ -56,9 +58,7 @@ npm install -g orange-agent-harness
 npx orange-agent-harness
 ```
 
-> 💡 推荐使用 Bun 安装，启动速度更快，且与项目运行时保持一致。
-
-### 3. 启动 Agent 运行时
+### 2. 启动 Agent 运行时
 
 ```bash
 orange
