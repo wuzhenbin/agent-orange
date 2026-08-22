@@ -13,7 +13,7 @@ export enum MessageType {
 }
 
 export const CustomColor = {
-    tips: chalk.hex("#6CA35E"),
+    tips: chalk.hex("#00897B"),
     gray: chalk.hex("#787878"),
     title: chalk.hex("#F0C674"),
     info: chalk.hex("#38BDF8"),

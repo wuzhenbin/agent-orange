@@ -66,6 +66,23 @@ orange
 
 ---
 
+## 项目截图
+
+功能特性
+<p align="center">
+  <img src="./assets/feature.png" width="100%" />
+</p>
+
+会话恢复
+<p align="center">
+  <img src="./assets/resume.png" width="100%" />
+</p>
+
+模型选择
+<p align="center">
+  <img src="./assets/select-model.png" width="100%" />
+</p>
+
 ## 配置目录
 
 所有配置位于 `~/.agent-orange/`，目录结构如下：
