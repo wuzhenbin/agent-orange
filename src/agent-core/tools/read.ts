@@ -103,7 +103,7 @@ export const createReadTool = (
                         const firstLineSize = formatSize(
                             Buffer.byteLength(allLines[startLine], "utf-8"),
                         )
-                        outputText = `[Line ${startLineDisplay} is ${firstLineSize}, exceeds ${formatSize(DEFAULT_MAX_BYTES)} limit. Use bash: sed -n '${startLineDisplay}p' ${path} | head -c ${DEFAULT_MAX_BYTES}]`
+                        outputText = `[Line ${startLineDisplay} is ${firstLineSize}, exceeds ${formatSize(DEFAULT_MAX_BYTES)} limit. Use bash: sed -n '${startLineDisplay}p' ${absolutePath} | head -c ${DEFAULT_MAX_BYTES}]`
                         details = { truncation }
                     } else if (truncation.truncated) {
                         // Truncation occurred. Build an actionable continuation notice.

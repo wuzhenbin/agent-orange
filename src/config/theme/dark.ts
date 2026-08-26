@@ -20,7 +20,7 @@ export const darkTheme = {
     },
     colors: {
         accent: "accent",
-        border: "blue",
+        border: "accent",
         borderAccent: "cyan",
         borderMuted: "darkGray",
         success: "green",

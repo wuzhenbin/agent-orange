@@ -407,7 +407,3 @@ bunx prettier --write .
 ```
 
 ---
-
-## License
-
-Private
