@@ -357,6 +357,31 @@ export interface AgentToolResult<T> {
 /** Callback used by tools to stream partial execution updates. */
 export type AgentToolUpdateCallback<T = any> = (partialResult: AgentToolResult<T>) => void
 
+export interface ExtensionContext {
+    /** Whether dialog-capable UI is available (true in TUI and RPC modes) */
+    hasUI: boolean
+    /** Current working directory */
+    cwd: string
+    /** Current model (may be undefined) */
+    model: Model<any> | undefined
+    /** Whether the agent is idle (not streaming) */
+    isIdle(): boolean
+    /** Whether project-local trust is active for this context. */
+    isProjectTrusted(): boolean
+    /** The current abort signal, or undefined when the agent is not streaming. */
+    signal: AbortSignal | undefined
+    /** Abort the current agent operation */
+    abort(): void
+    /** Whether there are queued messages waiting */
+    hasPendingMessages(): boolean
+    /** Gracefully shutdown pi and exit. Available in all contexts. */
+    shutdown(): void
+    /** Get current context usage for the active model. */
+    getContextUsage(): ContextUsage | undefined
+    /** Get the current effective system prompt. */
+    getSystemPrompt(): string
+}
+
 /** Tool definition used by the agent runtime. */
 export interface AgentTool<
     TParameters extends TSchema = TSchema,
@@ -368,6 +393,7 @@ export interface AgentTool<
         params: Static<TParameters>,
         signal?: AbortSignal,
         onUpdate?: AgentToolUpdateCallback<TDetails>,
+        ctx?: ExtensionContext,
     ) => Promise<AgentToolResult<TDetails>>
     /**
      * Per-tool execution mode override.

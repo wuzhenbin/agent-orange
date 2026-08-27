@@ -1,6 +1,6 @@
 {
     "name": "orange-agent-harness",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "description": "agent harness enginess with tui",
     "type": "module",
     "scripts": {
@@ -21,6 +21,7 @@
         "@earendil-works/pi-tui": "^0.79.9",
         "@iarna/toml": "^2.2.5",
         "@modelcontextprotocol/sdk": "^1.29.0",
+        "@silvia-odwyer/photon-node": "^0.3.4",
         "chalk": "^5.6.2",
         "cross-spawn": "^7.0.6",
         "diff": "^9.0.0",
