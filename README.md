@@ -375,24 +375,6 @@ ripgrep 按以下顺序读取忽略文件：
 
 ---
 
-
-## 上下文压缩测试用例
-
-以下提示词可生成超长多轮对话，用于验证 `/compact` 压缩能力：
-
-```text
-我正在启动一个代号为「Project Lighthouse」（灯塔计划）的开源智能家居项目。请为我新建一个文本文件，撰写一份长达 800 字的项目愿景声明，
-重点阐述为什么「边缘计算」比「云计算」更适合隐私保护。请务必在声明的最后一段提及：我们的初始启动资金是 320 万美元，且核心团队拒绝任何风险投资。
-
-针对上述愿景，请详细对比 Zigbee 和 Z-Wave 两种协议在开源社区中的支持度。请写一篇约 1000 字的技术分析，并强制要求：在对比表格的下方，
-用加粗字体写下结论——「我们最终选择 Zigbee 3.0，因为它拥有更开放的 MAC 层许可」。
-
-现在，请虚构一位我们的典型种子用户。姓名叫「王建军」，52 岁，居住在中国成都，是一名退休的无线电工程师。请写一段 800 字的人物画像，
-强调他非常介意数据被互联网大厂获取，且他的儿子在国外留学，需要通过特定端口转发才能访问家里设备。
-```
-
----
-
 ## 开发
 
 ```bash
@@ -404,6 +386,198 @@ bun run build
 
 # 代码格式化
 bunx prettier --write .
+```
+---
+
+
+## 上下文压缩测试用例
+
+以下提示词可生成超长多轮对话，用于验证 `/compact` 压缩能力：
+
+### Prompt 1
+```text
+我需要你帮我制定一个 SaaS 产品在美国市场发布的 go-to-market 计划。先不要急着给完整方案。接下来我会逐步告诉你背景、约束和我的偏好。你需要记住这些信息，并在后续方案中持续使用它们。
+```
+
+### Prompt 2
+```text
+我们是一家日本 SaaS 公司，产品是一个面向 20～200 人规模公司的 AI 客服平台。目前主要市场在日本，美国市场还没有正式上线。美国市场的首发预算是 10 万美元，包含 marketing、广告、PR 和活动费用，但不包含人员工资。第一阶段目标是上线后的 6 个月内获得 50 个付费美国客户。
+```
+
+### Prompt 3
+```text
+我们的目标客户不是大型 Enterprise。
+第一阶段主要针对：
+- 20～200 人规模的 B2B SaaS、电商和互联网公司
+- 客服团队大约 5～30 人
+- 已经在使用 Zendesk、Intercom 或类似产品
+- 对 AI customer support 有兴趣
+不要把 Fortune 500 当成第一阶段目标客户。
+```
+
+### Prompt 4
+```text
+还有一个很重要的限制：
+我们现在没有美国本地销售团队。
+只有：
+- 2 个日本销售
+- 1 个日本 marketing
+- 2 个工程师
+- CEO 可以参与美国市场活动，但每个月最多只能去美国一次。
+所以第一阶段不能设计成严重依赖线下销售拜访的模式。
+```
+
+### Prompt 5
+```text
+关于品牌定位，我不希望把产品宣传成“便宜的日本 AI 客服工具”。
+我们的定位应该更偏向：
+“AI customer support platform for growing SaaS and digital businesses”
+强调：
+- AI automation
+- 降低 support workload
+- 能和现有 support stack 集成
+- implementation 简单
+不要把“日本公司”作为核心卖点。
+```
+
+### Prompt 6
+```text
+渠道方面，我比较倾向于：
+1. Content / SEO
+2. Product-led growth
+3. Partner / integration
+4. LinkedIn
+我不希望第一阶段大量烧 Google Ads。
+原因是我们的品牌在美国还没有知名度，我担心直接买流量 CAC 会很高。
+```
+
+### Prompt 7
+```text
+关于活动：
+我们可以参加美国的 SaaS conference，但第一阶段最多参加两个。
+我比较倾向于 SaaStr 这一类 SaaS 活动。
+不要建议参加大量泛科技大会。
+```
+
+### Prompt 8
+```text
+现在加入几个已经确定的决策：
+
+1. 美国官网必须在 launch 前完成。
+2. 必须提供英文 demo。
+3. 必须提供至少一个美国客户 case study。
+4. pricing 页面不能显示日元，只显示美元。
+5. 第一阶段不做免费人工 onboarding。
+6. 可以提供 14 天 free trial。
+```
+
+### Prompt 9
+```text
+再补充几个细节，你后面需要记住：
+我们现在已经有一个 Shopify integration。
+Zendesk integration 预计 launch 后 2 个月才能完成。
+Intercom integration 暂时没有开发计划。
+所以 launch day 的主要 integration 卖点应该是 Shopify，而不是 Zendesk。
+```
+
+### Prompt 10
+```text
+我个人比较担心一个问题：
+美国客户可能会担心数据隐私。
+所以 marketing message 里面不能轻易声称“完全安全”或者“100% compliant”。
+如果涉及 compliance，要明确区分我们已经具备的能力和未来计划。
+```
+
+### Prompt 11
+```text
+目前有三个内部候选方案：
+A：大量 Google Ads + SDR outbound
+B：Content/SEO + PLG + LinkedIn + 少量 conference
+C：找美国 reseller / agency，让 partner 帮我们卖 
+我目前最倾向 B。但还没有最终决定。
+```
+
+### Prompt 12
+```text
+我们刚才讨论过一个方案：
+第一阶段直接找 5 个美国 reseller。
+但我认为这个方案暂时不合适，因为 partner enablement 成本太高，而且我们目前没有专门的人维护 partner。
+所以：
+不要把“5 个 reseller”当成已经确定的 launch strategy。
+可以保留 partner channel，但应该作为后续验证方向。
+```
+### 在这 /compact
+
+### Prompt 13
+```text
+现在先不要给最终 GTM。
+目前还有三个问题没有解决：
+1. 10 万美元具体怎么分配
+2. 6 个月获得 50 个客户的 funnel 怎么设计
+3. launch 前 8 周具体应该做什么
+把这三个问题记住，后面我们继续解决。
+```
+
+### Final Test Prompt
+```text
+好，现在直接继续我们的 GTM 计划。
+请你基于我们前面已经讨论和确定的信息，给我一份：
+“美国市场 Launch 前 8 周执行计划”。
+要求：
+1. 按 Week 8 → Week 1 倒排
+2. 每周列出最重要的 3～5 个动作
+3. 给每个动作标注负责人
+4. 给出预算
+5. 明确哪些事情必须在 launch 前完成
+6. 最后说明为什么你的方案适合我们目前的团队规模
+不要重新向我确认已经讨论过的信息。
+另外，特别注意：
+- 不要把 Zendesk integration 当成 launch day 已经完成
+- 不要把 reseller 作为既定 launch strategy
+- 不要把 Fortune 500 当成第一阶段 ICP
+- 不要把 Google Ads 作为主要获客渠道
+- 不要设计大量依赖美国线下销售拜访的方案
+```
+
+### 测试关键信息
+| 信息                     | Compression 后是否保留 |
+| ---------------------- | ----------------- |
+| $100k budget           | ✅                 |
+| 6个月 50客户               | ✅                 |
+| 20–200人 ICP            | ✅                 |
+| 非 Fortune 500          | ✅                 |
+| 没有美国销售团队               | ✅                 |
+| CEO 每月最多去美国一次          | ✅                 |
+| Shopify 已有 integration | ✅                 |
+| Zendesk 2个月后才有         | ✅                 |
+| Intercom 暂无计划          | ✅                 |
+| 14天 trial              | ✅                 |
+| 不做免费人工 onboarding      | ✅                 |
+| USD pricing            | ✅                 |
+| 美国 customer case study | ✅                 |
+| 不做夸大的 compliance claim | ✅                 |
+| 偏好 B                   | ✅                 |
+| Google Ads 非主要渠道       | ✅                 |
+| 最多两个 conference        | ✅                 |
+| reseller 不是既定 strategy | ✅                 |
+| 三个 pending questions   | ✅                 |
+
+
+### 二阶段测试提示词
+
+```text
+我们现在发现 launch 前预算只有 70,000 美元，而不是原来的 100,000 美元。
+请你不要重新制定整个 GTM。
+
+只修改受影响的部分，并保持之前已经确定的：
+- ICP
+- positioning
+- Shopify launch
+- Zendesk timeline
+- 14-day trial
+- channel preference
+
+同时告诉我，你放弃了哪些原计划，以及为什么。
 ```
 
 ---

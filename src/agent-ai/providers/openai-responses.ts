@@ -37,7 +37,7 @@ import { transformMessages } from "./transform-messages.ts"
 import { headersToRecord } from "../../utils/headers.ts"
 import { OpenAIResponsesCompat } from "./provider_types.ts"
 import { buildBaseOptions } from "./simple-options.ts"
-import { clampThinkingLevel } from "../models.ts"
+import { clampThinkingLevel, calculateCost } from "../models.ts"
 
 // 本项目使用 FunctionTool 类型, 因为OpenAI.Responses.Tool 是更广的通用类型
 export type ChatTool = OpenAI.Responses.FunctionTool
@@ -432,6 +432,29 @@ export const streamOpenAIResponses: StreamFunction<"openai-responses", OpenAIRes
                     // 整个 response 完成 所有 item 已生成结束
                     case "response.completed": {
                         const response = event.response
+                        if (response?.id) {
+                            output.responseId = response.id
+                        }
+                        if (response?.usage) {
+                            const cachedTokens =
+                                response.usage.input_tokens_details?.cached_tokens || 0
+                            output.usage = {
+                                // OpenAI includes cached tokens in input_tokens, so subtract to get non-cached input
+                                input: (response.usage.input_tokens || 0) - cachedTokens,
+                                output: response.usage.output_tokens || 0,
+                                cacheRead: cachedTokens,
+                                cacheWrite: 0,
+                                totalTokens: response.usage.total_tokens || 0,
+                                cost: {
+                                    input: 0,
+                                    output: 0,
+                                    cacheRead: 0,
+                                    cacheWrite: 0,
+                                    total: 0,
+                                },
+                            }
+                        }
+                        calculateCost(model, output.usage)
 
                         // Map status to stop reason
                         output.stopReason = mapStopReason(response?.status)
