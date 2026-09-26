@@ -64,6 +64,8 @@ npx orange-agent-harness
 orange
 ```
 
+默认使用当前目录作为工作目录。要指定其他目录，运行 `orange --path <目录>`。
+
 ---
 
 ## 项目截图
