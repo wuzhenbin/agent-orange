@@ -2,6 +2,7 @@
     "name": "orange-agent-harness",
     "version": "0.0.4",
     "description": "agent harness enginess with tui",
+    "license": "UNLICENSED",
     "type": "module",
     "scripts": {
         "dev": "bun run src/cli.ts",

@@ -1,174 +1,43 @@
-# 项目目录树
+# 仓库结构
 
-[返回架构概览](../architecture.md) · [查看逐文件职责](code-map.md)
-
-路径相对于仓库根目录；`node_modules/` 和 `.git/` 是依赖与版本库内部目录，未列入项目目录树。
-
-完整目录树：
+[返回文档目录](../README.md)
 
 ```text
-.
-├── assets/
-│   ├── feature.png
-│   ├── resume.png
-│   └── select-model.png
-├── docs/
-│   ├── architecture.md
-│   └── architecture/
-│       ├── code-map.md
-│       ├── extension-points.md
-│       ├── repository-tree.md
-│       ├── request-flow.md
-│       ├── runtime-setup.md
-│       └── sessions-and-delegation.md
+agent-orange/
 ├── src/
-│   ├── agent-ai/
-│   │   ├── providers/
-│   │   │   ├── openai-completions.ts
-│   │   │   ├── openai-prompt-cache.ts
-│   │   │   ├── openai-responses.ts
-│   │   │   ├── provider_types.ts
-│   │   │   ├── register-builtins.ts
-│   │   │   ├── simple-options.ts
-│   │   │   └── transform-messages.ts
-│   │   ├── api-registry.ts
-│   │   ├── env-api-keys.ts
-│   │   ├── index.ts
-│   │   ├── models.ts
-│   │   ├── session-resources.ts
-│   │   ├── stream.ts
-│   │   └── types.ts
+│   ├── cli.ts                     # 命令行入口
 │   ├── agent-core/
-│   │   ├── agent-runtime/
-│   │   │   ├── agent-context-builder.ts
-│   │   │   ├── agent-context.ts
-│   │   │   ├── agent-instance-factory.ts
-│   │   │   ├── agent-manager.ts
-│   │   │   └── types.ts
-│   │   ├── harness/
-│   │   │   ├── calc-token.ts
-│   │   │   ├── compaction-prompt.ts
-│   │   │   ├── compaction.ts
-│   │   │   ├── message.ts
-│   │   │   └── utils.ts
-│   │   ├── prompt/
-│   │   │   ├── orchestrator.ts
-│   │   │   └── program.ts
-│   │   ├── tools/
-│   │   │   ├── agent.ts
-│   │   │   ├── bash.ts
-│   │   │   ├── edit.ts
-│   │   │   ├── find.ts
-│   │   │   ├── grep.ts
-│   │   │   ├── ls.ts
-│   │   │   ├── read.ts
-│   │   │   └── write.ts
-│   │   ├── agent-loop.ts
-│   │   ├── agent.ts
-│   │   ├── guide.ts
-│   │   ├── index.ts
-│   │   ├── mcp-client.ts
-│   │   ├── mcp-router.ts
-│   │   ├── model-registry-helper.ts
-│   │   ├── model-registry.ts
-│   │   ├── model-resolver.ts
-│   │   ├── resource-loader-helper.ts
-│   │   ├── resource-loader.ts
-│   │   ├── session-manager-helper.ts
-│   │   ├── session-manager.ts
-│   │   ├── session.ts
-│   │   ├── settings-manager-helper.ts
-│   │   ├── settings-manager.ts
-│   │   ├── skills.ts
-│   │   ├── system-prompt.ts
-│   │   ├── tool-execute.ts
-│   │   ├── tool-register.ts
-│   │   └── types.ts
+│   │   ├── agent-runtime/         # 实例工厂、管理器、活动上下文
+│   │   ├── harness/               # Token 估算、摘要与上下文压缩
+│   │   ├── prompt/                # 编排与程序环境提示词
+│   │   ├── tools/                 # 文件、搜索、Shell、任务委派工具
+│   │   ├── agent.ts               # 运行状态、队列、取消和钩子
+│   │   ├── agent-loop.ts          # 模型与工具循环
+│   │   ├── session.ts             # 会话策略
+│   │   ├── session-manager.ts     # 历史条目与存储
+│   │   ├── model-registry.ts      # 加载用户模型配置
+│   │   ├── resource-loader.ts     # 角色、插件与项目规则
+│   │   └── mcp-*.ts               # MCP 连接与工具路由
+│   ├── agent-ai/
+│   │   ├── providers/             # 协议实现与消息转换
+│   │   ├── api-registry.ts        # API 适配器注册
+│   │   ├── stream.ts              # 统一流式调用入口
+│   │   └── types.ts               # 模型、消息、工具调用和流事件类型
 │   ├── client-tui/
-│   │   ├── components/
-│   │   │   ├── countdown-timer.ts
-│   │   │   ├── custom-editor.ts
-│   │   │   ├── dynamic-border.ts
-│   │   │   ├── footer.ts
-│   │   │   ├── model-selector.ts
-│   │   │   ├── session-selector-header.ts
-│   │   │   ├── session-selector-helper.ts
-│   │   │   ├── session-selector-list.ts
-│   │   │   ├── session-selector.ts
-│   │   │   └── stream-message.ts
-│   │   ├── core/
-│   │   │   ├── keybinding-hints.ts
-│   │   │   ├── keybindings.ts
-│   │   │   └── slash-commands.ts
-│   │   ├── theme/
-│   │   │   ├── color-utilities.ts
-│   │   │   ├── global-instance.ts
-│   │   │   ├── html-export-helper.ts
-│   │   │   ├── theme-loading.ts
-│   │   │   ├── theme.ts
-│   │   │   ├── tui-helper.ts
-│   │   │   └── types.ts
-│   │   ├── auto-complete.ts
-│   │   ├── command-handlers.ts
-│   │   ├── helper.ts
-│   │   ├── interact.ts
-│   │   ├── key-handlers.ts
-│   │   ├── selector-handles.ts
-│   │   ├── types.ts
-│   │   └── ui-manager.ts
-│   ├── config/
-│   │   ├── theme/
-│   │   │   ├── dark.ts
-│   │   │   └── theme-schema.ts
-│   │   ├── path-config.ts
-│   │   └── settings.ts
-│   ├── utils/
-│   │   ├── session/
-│   │   │   └── uuid.ts
-│   │   ├── child-process.ts
-│   │   ├── diagnostics.ts
-│   │   ├── edit-diff.ts
-│   │   ├── event-emit.ts
-│   │   ├── event-stream.ts
-│   │   ├── exif-orientation.ts
-│   │   ├── file-mutation-queue.ts
-│   │   ├── frontmatter.ts
-│   │   ├── fs-watch.ts
-│   │   ├── global-tools.ts
-│   │   ├── hash.ts
-│   │   ├── headers.ts
-│   │   ├── html.ts
-│   │   ├── image-resize-core.ts
-│   │   ├── image-resize.ts
-│   │   ├── json-parse.ts
-│   │   ├── json.ts
-│   │   ├── mime.ts
-│   │   ├── output-accumulator.ts
-│   │   ├── overflow.ts
-│   │   ├── path-utils.ts
-│   │   ├── paths.ts
-│   │   ├── photon.ts
-│   │   ├── sanitize-unicode.ts
-│   │   ├── shell.ts
-│   │   ├── sleep.ts
-│   │   ├── syntax-highlight.ts
-│   │   ├── truncate.ts
-│   │   ├── typebox-helpers.ts
-│   │   └── validation.ts
-│   └── cli.ts
+│   │   ├── components/            # 编辑器、消息、选择器和页脚
+│   │   ├── core/                  # 快捷键与斜杠命令定义
+│   │   ├── theme/                 # 主题、颜色与渲染辅助
+│   │   ├── interact.ts            # 输入和会话交互循环
+│   │   └── ui-manager.ts          # 界面装配、事件订阅与渲染
+│   ├── config/                    # 全局路径、界面常量与内置主题
+│   └── utils/                     # 事件流、文件、进程、图像等通用工具
+├── docs/                          # 文档及目录索引
 ├── test/
-│   ├── openai/
-│   │   ├── completions.test.ts
-│   │   └── response.test.ts
-│   └── tool/
-│       └── read.test.ts
-├── .gitignore
-├── .prettierrc
-├── .rgignore
-├── README.md
-├── bun.lock
-├── package-lock.json
-├── package.json
-└── tsconfig.json
+│   ├── openai/                    # 依赖本地模型服务的独立脚本
+│   └── tool/                      # 工具参数校验脚本
+├── assets/                        # README 截图
+├── package.json                   # 命令、依赖与发布配置
+└── tsconfig.json                  # 严格类型与构建输出配置
 ```
 
+`dist/` 是生成目录。运行时用户配置和会话位于 `~/.agent-orange/`，不属于仓库源码。

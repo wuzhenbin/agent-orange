@@ -8,6 +8,10 @@
 
 ---
 
+## 项目文档
+
+完整文档见 [文档目录](docs/README.md)，包括[架构总览](docs/architecture.md)、[配置说明](docs/configuration.md)和[开发指南](docs/development.md)。
+
 ## 特性
 
 - 🖥️ **终端交互界面（TUI）**：流式输出、会话管理、模型切换

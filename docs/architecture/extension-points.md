@@ -1,20 +1,35 @@
-# 扩展位置与当前实现边界
+# 扩展指南
 
-[返回架构概览](../architecture.md)
+[返回文档目录](../README.md)
 
-| 需求 | 修改入口 |
-| --- | --- |
-| 新增内置工具 | 在 `src/agent-core/tools/` 实现工具，并在 `tool-register.ts` 注册；角色的 `tools` 列表决定是否启用 |
-| 新增模型 API | 在 `src/agent-ai/providers/` 实现流式适配，并通过 `api-registry.ts` 注册 |
-| 新增代理角色 | 在 `~/.agent-orange/agents/` 添加 TOML 配置；主代理可通过 `delegate_task` 使用 |
-| 新增 TUI 命令 | 更新 `src/client-tui/core/slash-commands.ts` 及对应输入处理代码 |
+## 新增本地工具
 
-以下是以当前代码为准、维护时需要留意的边界：
+在 `src/agent-core/tools/` 新建 kebab-case 文件，实现返回 `AgentTool` 的工厂。工具需提供名称、描述、参数 Schema 与 `execute`；结果由 `content` 和 `details` 组成，可通过更新回调提供进度。
 
-- 启动流程固定创建 `default` 角色；虽然设置结构中有 `masterProfile`，`createAgentContextParams()` 当前没有读取它。
-- 角色配置允许声明 `programs`，`buildSystemPrompt()` 也支持 Python 指令，但 `AgentInstanceFactory.buildDefinition()` 当前没有把 `programs` 传入提示词构造。
-- `plugins.json` 的 MCP 配置由工厂向 `MCPClient` 传递 `command` 和 `args`；当前 stdio 客户端构造过程没有传递示例配置中的 `env`。
+将工厂加入 `tool-register.ts` 的 `toolsRegister`，再在目标角色 TOML 的 `tools` 数组中启用。文件与进程操作应使用工厂传入的工作目录，并处理取消信号。存在顺序要求时声明 `executionMode: "sequential"`。
 
-这些边界也解释了部分 README 配置项与实际运行效果可能存在差异；调整配置能力时，应同时核对运行时装配与用户文档。
+委派工具通过独立的 `createAgentTools` 注入，不能直接当作普通本地工具名加入当前注册表。
 
-继续阅读：[项目文件索引](code-map.md)。
+## 新增模型或协议
+
+兼容已有协议的模型可直接加入 `models.json`。全新协议需要在 `src/agent-ai/providers/` 实现 `stream` 与 `streamSimple`，通过 `registerApiProvider` 注册，并在 `providers/register-builtins.ts` 接入；同时检查 `types.ts` 的 API 类型。
+
+适配器需将服务端响应转换为统一助手消息事件，涵盖文本、思考、工具调用、用量、结束与错误。协议差异留在模型层，Agent 循环继续使用统一类型。
+
+## 接入 MCP
+
+在 `plugins.json.mcpServers` 声明服务的 `command` 与 `args`，在角色 `mcps` 中启用。当前使用 stdio 传输，工具名映射为 `mcp__服务名__工具名`。
+
+`MCPClient` 负责连接、列举和调用工具，`MCPToolRouter` 复用连接并按服务名选择工具。增加新的传输方式、环境配置透传或结果类型时，需要修改客户端和工厂装配路径。
+
+## 新增技能或角色
+
+技能目录由 `plugins.json.skillsPaths` 指定，`skills.ts` 负责加载技能元信息；角色通过 `skills` 名称列表选择可用技能。系统提示词展示技能说明和文件位置，具体指令由代理按需读取。
+
+新角色放在 `~/.agent-orange/agents/*.toml`。除默认角色外的角色供编排提示词列举；角色工具名应来自实际注册表。字段格式见[配置说明](../configuration.md)。
+
+## 新增终端命令
+
+在 `client-tui/core/slash-commands.ts` 声明名称与说明，检查 `key-handlers.ts` 的输入分派，并在 `command-handlers.ts` 或选择器处理器中实现行为。涉及会话切换时同步重绑界面订阅；涉及界面组件时复用已有主题和组件模式。
+
+每项新增功能均应记录到 [feature.md](../feature.md)，改变装配或事件流程时同步更新对应架构文档。

@@ -1,48 +1,54 @@
-# Agent Orange 架构
+# 架构总览
 
-Agent Orange 是运行在终端中的交互式 Agent。CLI 创建主代理运行时，TUI 接收输入并展示流式事件；Agent 核心负责模型调用、工具执行、会话和子代理。安装与配置示例见 [README](../README.md)。
+[返回文档目录](README.md)
 
-## 组件关系
+Agent Orange 将终端交互、Agent 执行与模型协议适配拆成三个主要层次。应用入口是 `src/cli.ts`，发布命令为 `orange`，构建产物位于 `dist/`。
 
 ```mermaid
 flowchart TD
     CLI[cli.ts] --> Builder[createAgentContextParams]
-    Builder --> Factory[AgentInstanceFactory]
-    Builder --> Manager[AgentManager]
-    Factory --> Resources[ResourceLoader / SettingsManager / ModelRegistry]
-    Factory --> MCP[MCPToolRouter / MCPClient]
-    Factory --> Session[AgentSession]
-    Factory --> Agent[Agent]
-    Factory --> Store[SessionManager]
-    CLI --> TUI[InteractiveMode / UIManager]
-    TUI --> Session
-    Session --> Agent
-    Session --> Store
+    Builder --> Context[AgentContext]
+    CLI --> TUI[client-tui / InteractiveMode]
+    TUI --> Context
+    Context --> Manager[AgentManager / AgentInstanceFactory]
+    Manager --> Session[AgentSession]
+    Session --> Agent[Agent]
     Agent --> Loop[agent-loop]
-    Loop --> Providers[agent-ai Provider]
-    Loop --> Tools[tool-execute / 内置及 MCP 工具]
-    Tools --> Manager
-    Session -- 事件 --> TUI
+    Loop --> AI[agent-ai / streamSimple]
+    AI --> Provider[OpenAI Completions / Responses]
+    Loop --> Tools[tool-execute / AgentTool]
+    Tools --> Native[本地工具]
+    Tools --> MCP[MCPClient / MCPToolRouter]
+    Tools --> Delegate[delegate_task]
+    Delegate --> Manager
+    Session --> Storage[SessionManager / JSONL]
 ```
 
-| 层 | 主要职责 | 关键文件 |
-| --- | --- | --- |
-| 入口和界面 | 解析工作目录、初始化 TUI、接收输入、渲染事件、处理斜杠命令 | `src/cli.ts`、`src/client-tui/interact.ts`、`src/client-tui/ui-manager.ts` |
-| 运行时装配 | 加载角色与资源，创建主代理、子代理及其运行时 | `src/agent-core/agent-runtime/` |
-| 会话协调 | 提交消息、维护排队输入、自动重试、上下文压缩、转发事件 | `src/agent-core/session.ts` |
-| 推理循环 | 维护消息状态，调用模型，执行工具，处理下一轮及取消 | `src/agent-core/agent.ts`、`src/agent-core/agent-loop.ts`、`src/agent-core/tool-execute.ts` |
-| 模型适配 | 按 API 类型选择 Provider，统一流式响应和消息类型 | `src/agent-ai/` |
-| 持久化 | 以追加方式保存会话记录，重建当前分支上下文 | `src/agent-core/session-manager.ts`、`src/agent-core/session-manager-helper.ts` |
+## 模块边界
 
-## 按需深入
+| 层或模块                   | 职责                                                         |
+| -------------------------- | ------------------------------------------------------------ |
+| `client-tui`               | 输入、快捷键、命令、选择器、主题和流式消息渲染               |
+| `agent-core/agent-runtime` | 装配共享服务、创建代理实例、管理活动代理与会话切换           |
+| `AgentSession`             | 包装一次会话的交互策略：消息记录、队列、模型切换、重试和压缩 |
+| `Agent` 与 `agent-loop`    | 保存运行状态，驱动模型与工具交替执行，发布运行事件           |
+| `SessionManager`           | 管理会话条目、分支路径、JSONL 存储和上下文重建               |
+| `agent-ai`                 | 统一模型、消息和事件类型，按 API 协议路由流式请求            |
+| `config` 与 `utils`        | 全局路径、默认值、终端与文件处理等基础能力                   |
 
-从上面的组件关系入手，再按要解决的问题阅读：
+## 核心概念
 
-| 想了解 | 阅读 |
-| --- | --- |
-| 启动时如何装配角色、模型、工具和配置 | [启动与配置装配](architecture/runtime-setup.md) |
-| 输入如何经过会话、模型和工具并回到界面 | [一次输入的执行链](architecture/request-flow.md) |
-| 会话如何持久化、压缩，以及如何执行子代理 | [会话和子代理](architecture/sessions-and-delegation.md) |
-| 如何扩展工具、模型 API、角色或 TUI 命令 | [扩展位置与实现边界](architecture/extension-points.md) |
-| 需要按路径查找具体源文件的职责 | [项目文件索引](architecture/code-map.md) |
-| 需要浏览完整目录结构 | [项目目录树](architecture/repository-tree.md) |
+- **角色配置**：`agents/*.toml` 定义指令及允许启用的工具、技能和 MCP。
+- **AgentDefinition**：工厂装配后的角色定义，包含系统提示词和资源集合。
+- **AgentInstance**：运行中的实例，由 ID、定义和运行时组成。
+- **AgentRuntime**：包含 `Agent`、`AgentSession` 与 `SessionManager`。
+- **AgentContext**：为 TUI 提供活动实例及共享服务的访问入口。
+- **provider 与 api**：provider 是模型配置中的服务名称；api 是实际适配协议，例如 `openai-responses`。
+
+## 数据与事件
+
+模型层使用统一的 `Message` 与 `AssistantMessageEvent`；核心层使用 `AgentMessage` 与 `AgentEvent`；会话层补充队列、重试、压缩等事件。TUI 订阅会话及子代理事件更新画面，消息持久化由会话层处理。
+
+会话历史和发给模型的上下文并不相同：历史保留消息与压缩记录，上下文重建时使用摘要和保留的近期消息。项目规则与技能元信息在构建系统提示词时注入。
+
+更多细节见[启动与资源装配](architecture/runtime-setup.md)、[请求与事件流](architecture/request-flow.md)和[会话专题](architecture/sessions-and-delegation.md)。

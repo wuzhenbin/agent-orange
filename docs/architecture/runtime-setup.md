@@ -1,14 +1,34 @@
-# 启动与配置装配
+# 启动与资源装配
 
-[返回架构概览](../architecture.md)
+[返回文档目录](../README.md)
 
-1. `cli.ts` 以 `--path <目录>` 指定的目录或当前目录作为工作目录，调用 `createAgentContextParams(cwd)`。
-2. Builder 创建 `SettingsManager`、`ModelRegistry`、`MCPToolRouter` 和 `ResourceLoader`，再由 `AgentManager` 创建名为 `default` 的主代理；主代理标记为编排者，并启用会话持久化。
-3. `AgentInstanceFactory` 读取 `~/.agent-orange/agents/default.toml`、`plugins.json`、项目上下文文件；连接角色声明的 MCP 服务，筛选技能，组装工具和系统提示词，再创建 `Agent`、`AgentSession`、`SessionManager`。
-4. `InteractiveMode.run()` 初始化界面，循环获取用户输入并调用当前 `AgentSession.prompt()`。
+## 启动顺序
 
-用户数据路径由 `src/config/path-config.ts` 集中定义，默认根目录为 `~/.agent-orange/`。其中 `settings.json` 保存运行设置，`models.json` 保存 Provider 与模型，`plugins.json` 保存 MCP 声明及技能路径，`agents/*.toml` 定义代理角色，`sessions/*.jsonl` 保存会话。缺失的基础配置由相应加载器创建。
+1. `src/cli.ts` 使用 `parseArgs` 解析 `--path` 和 `--version`。版本请求读取包版本后直接返回。
+2. 正常启动时动态导入运行时和 TUI 模块，以 `--path` 或当前进程目录作为工作目录。
+3. `createAgentContextParams` 创建 `SettingsManager`、`ModelRegistry`、`MCPToolRouter`、`ResourceLoader`、`AgentInstanceFactory` 和 `AgentManager`。
+4. 管理器创建 `default` 角色，启用 `orchestrator: true` 与 `sessionPersist: true`，将实例 ID 设为活动代理。
+5. CLI 构造 `AgentContext` 和 `InteractiveMode`，初始化界面并进入输入循环。
 
-角色的 `tools`、`mcps`、`skills` 字段控制实例可用资源。`ResourceLoader` 还按全局配置目录、工作目录及其祖先目录读取 `AGENTS.md` 或 `CLAUDE.md`，由 `buildSystemPrompt()` 注入系统提示词。`ModelRegistry` 根据 `provider:modelId` 查找模型；API Key 优先取 `models.json` 中的配置，其次取大写 Provider 名对应的环境变量。主代理还获得 `delegate_task` 工具及可用子代理描述。
+## 定义构建
 
-继续阅读：[一次输入的执行链](request-flow.md)。
+`AgentInstanceFactory.buildDefinition` 先读取角色 TOML。主代理额外读取其他角色供编排使用，再读取 `plugins.json`。
+
+- 按角色的 `mcps` 名称初始化服务；已有连接通过共享路由器复用。
+- 从 `skillsPaths` 加载技能，再按角色 `skills` 名称筛选。
+- 按角色 `tools` 创建本地工具，并合入该角色启用的 MCP 工具。
+- 加载全局和项目规则，组装系统提示词。
+
+规则加载先读取 `~/.agent-orange/`，再按从根目录到工作目录的顺序合并祖先目录规则。同一目录优先选择 `AGENTS.md`、`AGENTS.MD`、`CLAUDE.md`、`CLAUDE.MD` 中第一个可读取的文件，并按路径去重。
+
+提示词由角色指令、主代理编排说明、项目规则、技能元信息和工作目录组成。技能正文通过工具按需读取。
+
+## 运行时创建
+
+工厂根据默认模型配置创建 `Agent`，提供 API Key 查询函数和会话 ID，再创建 `AgentSession` 包装它。主代理通过额外工具集合获得 `delegate_task`；子代理默认使用内存会话，不额外注入编排工具。
+
+`AgentContext` 将活动实例和服务暴露给 TUI，并在退出时清理代理与 MCP 连接。新建或恢复会话时，通过 `AgentManager.replaceAgentSession` 为现有定义重建运行时。
+
+## 当前实现边界
+
+启动代码当前固定选择 `default`，没有使用 `settings.masterProfile`。工厂也没有将角色的 `programs` 传给提示词构建器。配置字段存在不代表完整接入；具体限制见[配置说明](../configuration.md)。

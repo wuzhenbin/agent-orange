@@ -1,39 +1,49 @@
-# 一次输入的执行链
+# 请求与事件流
 
-[返回架构概览](../architecture.md)
+[返回文档目录](../README.md)
 
 ```mermaid
 sequenceDiagram
-    participant U as 用户
-    participant UI as TUI
+    participant UI as InteractiveMode / UIManager
     participant S as AgentSession
     participant A as Agent / agent-loop
-    participant P as Provider
-    participant T as 工具执行器
-    participant DB as SessionManager
-    U->>UI: 输入消息
+    participant M as agent-ai
+    participant T as tool-execute
+    participant H as SessionManager
     UI->>S: prompt(text)
-    S->>A: prompt(用户消息)
-    A->>P: streamSimple(模型、上下文、工具)
-    P-->>A: 文本/思考/工具调用流
-    A-->>S: message_start/update/end 事件
-    S->>DB: appendMessage(完成的消息)
+    S->>A: prompt(userMessage)
+    A->>M: streamSimple(model, context)
+    M-->>A: 文本、思考与工具调用事件
+    A-->>S: message_update / message_end
     S-->>UI: 会话事件
-    opt 模型请求调用工具
-        A->>T: 校验参数并执行工具
-        T-->>A: toolResult
-        A-->>S: 工具事件及结果消息
-        S->>DB: appendMessage(toolResult)
-        A->>P: 携带工具结果继续推理
+    S->>H: message_end 时追加消息
+    opt 模型请求工具
+        A->>T: executeToolCalls
+        T-->>A: toolResult 消息与工具事件
+        A->>M: 携带工具结果再次请求
     end
     A-->>S: agent_end
-    S-->>UI: 完成/重试/压缩状态
+    S->>S: 检查重试、压缩与剩余队列
 ```
 
-`Agent` 持有当前消息、模型、工具、思考等级和运行状态，并提供订阅、取消、继续执行以及消息排队接口。`agent-loop.ts` 将上下文转换为统一的模型消息，使用 `agent-ai/stream.ts` 按模型的 `api` 字段找到 Provider。Provider 将响应转成统一的 `AssistantMessageEvent` 流。当前内置注册的 API 类型是 `openai-completions` 与 `openai-responses`。
+## 从输入到模型
 
-模型返回工具调用时，`tool-execute.ts` 先匹配工具、校验参数，再执行并生成 `toolResult` 消息。默认可并发执行一批工具；全局执行模式或任一工具标记为顺序执行时，整批按顺序处理。工具结果进入下一轮模型上下文，直到没有工具调用或循环结束。运行中提交的新消息可作为下一轮插入的 steering 消息，或作为本次运行结束后的 follow-up 消息。
+`InteractiveMode.run` 获取用户输入后调用 `AgentSession.prompt`。会话验证模型，将文本与可选图片转换为用户消息。运行中调用必须指定 `streamingBehavior`：`steer` 用于下一轮插话，`followUp` 用于当前任务结束后继续。
 
-`AgentSession` 订阅 Agent 事件：完成的用户消息、助手消息和工具结果在 `message_end` 时交给 `SessionManager`；同一事件流也供 TUI 渲染。会话层还处理可重试错误、上下文溢出与自动/手动压缩。压缩由 `harness/compaction.ts` 生成摘要，写入独立的 compaction 记录，再以重建后的上下文更新 Agent 消息。
+`Agent` 管理运行状态和取消信号。`agent-loop` 在请求前执行可选上下文转换，再通过 `convertToLlm` 生成模型消息。`streamSimple` 根据 `model.api` 查询已注册的协议适配器。
 
-继续阅读：[会话和子代理](sessions-and-delegation.md)。
+模型返回的部分消息保留在上下文中，增量事件更新这条消息，完成后替换为最终消息。循环把文本、思考和工具调用的增量统一映射为核心层 `message_update`。
+
+## 工具执行
+
+`tool-execute.ts` 查找工具、验证参数并调用执行函数，提供调用前后钩子和增量更新回调。失败会转为带 `isError` 的工具结果。
+
+默认并行执行一批工具；当配置指定串行，或批次中有工具声明 `executionMode: "sequential"` 时，整批串行执行。并行完成后的结果消息仍按原工具调用顺序加入上下文。只有本批所有已完成工具均返回 `terminate: true`，批次才请求终止后续工具循环。
+
+工具结果加入上下文后，模型可以继续调用工具或给出回答。每轮后支持准备下一轮上下文和停止判断等钩子；内层循环处理工具与插话，外层循环处理后续消息。
+
+## 事件与界面
+
+核心事件包括 `agent_start`、`turn_start`、`message_start`、`message_update`、`message_end`、`tool_execution_start/update/end`、`turn_end` 和 `agent_end`。
+
+`AgentSession` 在 `message_end` 保存用户、助手和工具结果消息，并转发事件；会话还发布重试、压缩和队列变化事件。`UIManager` 负责订阅和渲染，新建或恢复会话后重新绑定当前会话。
